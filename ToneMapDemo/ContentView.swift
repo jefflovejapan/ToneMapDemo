@@ -15,7 +15,7 @@ struct ContentView: View {
     var body: some View {
         VStack {
             Button(action: { isHDR.toggle() }, label: {
-                Text(isHDR ? "HDR on": "HDR off")
+                Text(isHDR ? "HDR": "Tone-mapped SDR")
             })
             if isHDR {
                 hdrPlayerView
@@ -58,12 +58,15 @@ struct ContentView: View {
         let sdrURL = Bundle.main.url(forResource: "sdr", withExtension: "mov")!
         let asset = AVURLAsset(url: sdrURL)
         let playerItem = AVPlayerItem(asset: asset)
-        let videoComposition = try await AVVideoComposition.videoComposition(with: asset, applyingCIFiltersWithHandler: { request in
+        let videoComposition = try await AVMutableVideoComposition.videoComposition(with: asset, applyingCIFiltersWithHandler: { request in
             let sourceImage = request.sourceImage
             let filter = ToneMapFilter()
             filter.inputImage = sourceImage
             request.finish(with: filter.outputImage!, context: nil)
         })
+        videoComposition.colorPrimaries = AVVideoColorPrimaries_ITU_R_2020
+        videoComposition.colorTransferFunction = AVVideoTransferFunction_SMPTE_ST_2084_PQ
+        videoComposition.colorYCbCrMatrix = AVVideoYCbCrMatrix_ITU_R_2020
         playerItem.videoComposition = videoComposition
         return AVPlayer(playerItem: playerItem)
     }
